@@ -102,13 +102,21 @@ void gemm_gpu_o0(float* A, float* B, float* C, int M, int N, int K)
 	gemm_gpu_o0_kernel<<<gridSize, blockSize>>>(A, B, C, M, N, K);
 }
 
+// Parallelize the kernel across multiple Streaming Multiprocessors (SM) and thread blocks. 
+// Find a set of suitable kernel launch parameters. Note that the starter code does all computations in one SM.
+
 // The scafolding for optimized GEMM implementations
 __global__ void gemm_gpu_o1_kernel(float* A, float* B, float *C, int M, int N, int K) {
 }
+
 void gemm_gpu_o1(float* A, float* B, float* C, int M, int N, int K)
 {
 	// Init block and grid size
 }
+
+
+// Tile your implementation to maximize data reuse. Please use GPU shared memory to load and store the tiles
+// used for computation. Also, think about memory coalescing when you develop the tiled code.
 
 __global__ void gemm_gpu_o2_kernel(float* A, float* B, float *C, int M, int N, int K) {
 }
@@ -117,6 +125,8 @@ void gemm_gpu_o2(float* A, float* B, float* C, int M, int N, int K)
 	// Init block and grid size
 }
 
+// Empirically try out multiple kernel launch parameters and find out a performant set of parameters that utilizes
+// the GPU parallelism better. Note that you are not required to find the best.
 __global__ void gemm_gpu_o3_kernel(float* A, float* B, float *C, int M, int N, int K) {
 }
 void gemm_gpu_o3(float* A, float* B, float* C, int M, int N, int K)
