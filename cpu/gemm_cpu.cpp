@@ -44,14 +44,27 @@ void gemm_cpu_o0(float* A, float* B, float *C, int M, int N, int K) {
 
 // Your optimized implementations go here
 // note that for o4 you don't have to change the code, but just the compiler flags. So, you can use o3's code for that part
-void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
 
+// Optimal loop order for this kernel based on data locality
+// when loops are iterating through values of input and output matrices
+void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
+	for (int j = 0; j < N; j++) {
+		for (int i = 0; i < M; i++) {
+		  for (int k = 0; k < K; k++) {
+		C[i * N + j]  += A[i * K + k]  * B[k * N + j];
+		  }
+		}
+	}
 }
 
+//  Tiled version of the kernel, where the inner two loops are transformed
+// Tiling factor fits accessed data into the L1 cache of the computer
 void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
 
 }
 
+// Parallelizing the outer loop(s) using OpenMP 
+// Vectorize the inner loop using suitable compiler flags
 void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
 
 }
