@@ -1,0 +1,73 @@
+\documentclass[10pt]{article}
+\usepackage{soul}
+\usepackage{fullpage,course}
+\usepackage{hyperref}
+\usepackage{enumerate}
+\usepackage{xcolor}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[T1]{fontenc}
+
+\def\handout{Machine Project I}
+\parskip 6pt
+\parindent 0pt
+
+\begin{document}
+
+\vspace*{-0.2in}
+
+\begin{center}
+\bf Student Name: \hl{<fill>} \hspace{3mm} NetID: \hl{<fill>}
+\end{center}
+
+\normalsize
+
+\section{CPU}
+
+\subsection{Ablation Study}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\linewidth]{assets/ablation_cpu.pdf}
+\caption{Ablation: Speedup of Optimizations on CPU}
+\label{fig:cpu_ablation}
+\end{figure}
+
+\textbf{\textit{Insight}}: one paragraph describing the results above
+
+\subsection{Scaling Study}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\linewidth]{assets/scaling_cpu.pdf}
+\caption{Scaling: Speedup of Optimizations on CPU}
+\label{fig:cpu_scaling}
+\end{figure}
+
+\textbf{\textit{Insight}}: one paragraph describing the results above
+
+\section{GPU}
+
+\subsection{Ablation Study}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\linewidth]{assets/ablation_gpu.pdf}
+\caption{Ablation: Speedup of Optimizations on GPU}
+\label{fig:gpu_ablation}
+\end{figure}
+
+\textbf{\textit{Insight}}: one paragraph describing the results above
+
+\subsection{Scaling Study}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\linewidth]{assets/scaling_gpu.pdf}
+\caption{Scaling: Speedup of Optimizations on GPU}
+\label{fig:gpu_scaling}
+\end{figure}
+
+\textbf{\textit{Insight}}: one paragraph describing the results above
+
+
+\end{document}
