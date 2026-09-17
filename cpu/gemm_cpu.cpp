@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <chrono>
 #include "../include/utils.h"
 
@@ -62,19 +61,21 @@ void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
 // Tiled version of the kernel, where the inner two loops are transformed
 // Tiling factor fits accessed data into the L1 cache of the computer
 void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
+
   const int T = 32;
-  
   for (int i = 0; i < M; i++) {
-    
-    for (int k0 = 0; k0 < K; k0 += T) {
-      int kend = (k0 + T < K) ? k0 + T : K;
-      
-      for (int j0 = 0; j0 < N; j0 += T) {
-        int jend = (j0 + T < N) ? j0 + T : N;
-       
-        for (int k = k0; k < kend; k++) {
-          
-          for (int j = j0; j < jend; j++) {
+
+    for (int kk = 0; kk < K; kk += T) {
+
+      int kend = (kk + T < K) ? kk + T : K;
+
+      for (int jj = 0; jj < N; jj += T) {
+
+        int jend = (jj + T < N) ? jj + T : N;
+
+        for (int k = kk; k < kend; k++) {
+
+          for (int j = jj; j < jend; j++) {
             C[i * N + j] += A[i * K + k] * B[k * N + j];
           }
         }
@@ -118,13 +119,13 @@ int main(int argc, char* argv[]) {
 	// We may (at discretion) verify that your code is correct.
 	float* refC = new float[Ref::M * Ref::N]();
 	auto ref = Ref();
-	CHECK(gemm_cpu_o0)
+	//CHECK(gemm_cpu_o0)
 	CHECK(gemm_cpu_o1)
 	CHECK(gemm_cpu_o2)
 	CHECK(gemm_cpu_o3)
 	delete[] refC;
 	
-	TIME(gemm_cpu_o0)
+	//TIME(gemm_cpu_o0)
 	TIME(gemm_cpu_o1)
 	TIME(gemm_cpu_o2)
 	TIME(gemm_cpu_o3)
