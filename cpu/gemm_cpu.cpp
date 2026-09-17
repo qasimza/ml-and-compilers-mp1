@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include "../include/utils.h"
 
@@ -36,7 +37,7 @@ void gemm_cpu_o0(float* A, float* B, float *C, int M, int N, int K) {
   for (int j = 0; j < N; j++) {
     for (int i = 0; i < M; i++) {
       for (int k = 0; k < K; k++) {
-	C[i * N + j]  += A[i * K + k]  * B[k * N + j];
+	      C[i * N + j]  += A[i * K + k]  * B[k * N + j];
       }
     }
   }
@@ -58,10 +59,28 @@ void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
   }
 }
 
-//  Tiled version of the kernel, where the inner two loops are transformed
+// Tiled version of the kernel, where the inner two loops are transformed
 // Tiling factor fits accessed data into the L1 cache of the computer
 void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
-
+  const int T = 32;
+  
+  for (int i = 0; i < M; i++) {
+    
+    for (int k0 = 0; k0 < K; k0 += T) {
+      int kend = (k0 + T < K) ? k0 + T : K;
+      
+      for (int j0 = 0; j0 < N; j0 += T) {
+        int jend = (j0 + T < N) ? j0 + T : N;
+       
+        for (int k = k0; k < kend; k++) {
+          
+          for (int j = j0; j < jend; j++) {
+            C[i * N + j] += A[i * K + k] * B[k * N + j];
+          }
+        }
+      }
+    }
+  }
 }
 
 // Parallelizing the outer loop(s) using OpenMP 
