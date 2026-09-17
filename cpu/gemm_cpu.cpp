@@ -32,7 +32,6 @@ std::chrono::duration<double, std::milli> duration_ ## name = time_ ## name/floa
 // reference CPU implementation of the GEMM kernel
 // note that this implementation is naive and will run for longer for larger
 // graphs
-__attribute__((target("no-fma")))
 void gemm_cpu_o0(float* A, float* B, float *C, int M, int N, int K) {
   for (int j = 0; j < N; j++) {
     for (int i = 0; i < M; i++) {
@@ -48,7 +47,6 @@ void gemm_cpu_o0(float* A, float* B, float *C, int M, int N, int K) {
 
 // Optimal loop order for this kernel based on data locality
 // when loops are iterating through values of input and output matrices
-__attribute__((target("no-fma")))
 void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
   // i-k-j: B and C are walked along rows (contiguous in row-major)
   for (int i = 0; i < M; i++) {
@@ -62,27 +60,20 @@ void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
 
 // Tiled version of the kernel, where the inner two loops are transformed
 // Tiling factor fits accessed data into the L1 cache of the computer
-__attribute__((target("no-fma")))
 void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
-
   const int T = 32;
-  for (int ii = 0; ii < M; ii += T) {
-    
-    int iend = (ii + T < M) ? ii + T : M;
 
+  for (int i = 0; i < M; i++) {
     for (int kk = 0; kk < K; kk += T) {
-
       int kend = (kk + T < K) ? kk + T : K;
 
       for (int jj = 0; jj < N; jj += T) {
-
         int jend = (jj + T < N) ? jj + T : N;
 
-        for (int i = ii; i < iend; i++) {
-          for (int k = kk; k < kend; k++) {
-            for (int j = jj; j < jend; j++) {
-              C[i * N + j] += A[i * K + k] * B[k * N + j];
-            }
+        for (int k = kk; k < kend; k++) {
+
+          for (int j = jj; j < jend; j++) {
+            C[i * N + j] += A[i * K + k] * B[k * N + j];
           }
         }
       }
@@ -93,62 +84,44 @@ void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
 
 // Parallelizing the outer loop(s) using OpenMP 
 // Vectorize the inner loop using suitable compiler flags
-__attribute__((optimize("O3"), target("no-fma")))
 void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
+  const int T = 32;
+  int i, j;
 
-    const int T = 32;
+  #pragma omp parallel for private(i, j) shared(A, B, C)
+  for (i = 0; i < M; i++) {
+    for (int kk = 0; kk < K; kk += T) {
+      int kend = (kk + T < K) ? kk + T : K;
 
-    // parallelizing the outer loop(s) using OpenMP 
-    #pragma omp parallel for
-    for (int ii = 0; ii < M; ii += T) {
-    
-      int iend = (ii + T < M) ? ii + T : M;
-  
-      for (int kk = 0; kk < K; kk += T) {
-  
-        int kend = (kk + T < K) ? kk + T : K;
-  
-        for (int jj = 0; jj < N; jj += T) {
-  
-          int jend = (jj + T < N) ? jj + T : N;
-  
-          for (int i = ii; i < iend; i++) {
-            for (int k = kk; k < kend; k++) {
-              for (int j = jj; j < jend; j++) {
-                C[i * N + j] += A[i * K + k] * B[k * N + j];
-              }
-            }
+      for (int jj = 0; jj < N; jj += T) {
+        int jend = (jj + T < N) ? jj + T : N;
+
+        for (int k = kk; k < kend; k++) {
+          for (j = jj; j < jend; j++) {
+            C[i * N + j] += A[i * K + k] * B[k * N + j];
           }
         }
       }
     }
   }
+}
 
-// o4 = o3 + FMA (o3 already has -O3; o0–o2 do not)
-__attribute__((optimize("O3"), target("fma")))
+// o4 = o3; FMA/vectorization come from CMake (-O3 -mavx2 -mfma)
 void gemm_cpu_o4(float* A, float* B, float *C, int M, int N, int K) {
-
   const int T = 32;
+  int i, j;
 
-  // parallelizing the outer loop(s) using OpenMP 
-  #pragma omp parallel for
-  for (int ii = 0; ii < M; ii += T) {
-    
-    int iend = (ii + T < M) ? ii + T : M;
-
+  #pragma omp parallel for private(i, j) shared(A, B, C)
+  for (i = 0; i < M; i++) {
     for (int kk = 0; kk < K; kk += T) {
-
       int kend = (kk + T < K) ? kk + T : K;
 
       for (int jj = 0; jj < N; jj += T) {
-
         int jend = (jj + T < N) ? jj + T : N;
 
-        for (int i = ii; i < iend; i++) {
-          for (int k = kk; k < kend; k++) {
-            for (int j = jj; j < jend; j++) {
-              C[i * N + j] += A[i * K + k] * B[k * N + j];
-            }
+        for (int k = kk; k < kend; k++) {
+          for (j = jj; j < jend; j++) {
+            C[i * N + j] += A[i * K + k] * B[k * N + j];
           }
         }
       }
@@ -185,7 +158,7 @@ int main(int argc, char* argv[]) {
 	CHECK(gemm_cpu_o1)
 	CHECK(gemm_cpu_o2)
 	CHECK(gemm_cpu_o3)
-  CHECK(gemm_cpu_o4)
+	CHECK(gemm_cpu_o4)
 	delete[] refC;
 	
 	//TIME(gemm_cpu_o0)
