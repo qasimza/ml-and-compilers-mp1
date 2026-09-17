@@ -115,6 +115,29 @@ void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
 
 void gemm_cpu_o4(float* A, float* B, float *C, int M, int N, int K) {
 
+  const int T = 32;
+
+  // parallelizing the outer loop(s) using OpenMP 
+  #pragma omp parallel for
+  for (int i = 0; i < M; i++) {
+
+    for (int kk = 0; kk < K; kk += T) {
+
+      int kend = (kk + T < K) ? kk + T : K;
+
+      for (int jj = 0; jj < N; jj += T) {
+
+        int jend = (jj + T < N) ? jj + T : N;
+
+        for (int k = kk; k < kend; k++) {
+
+          for (int j = jj; j < jend; j++) {
+            C[i * N + j] += A[i * K + k] * B[k * N + j];
+          }
+        }
+      }
+    }
+  }
 }
 
 
