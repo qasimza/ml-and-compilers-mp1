@@ -48,13 +48,14 @@ void gemm_cpu_o0(float* A, float* B, float *C, int M, int N, int K) {
 // Optimal loop order for this kernel based on data locality
 // when loops are iterating through values of input and output matrices
 void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
-	for (int j = 0; j < N; j++) {
-		for (int i = 0; i < M; i++) {
-		  for (int k = 0; k < K; k++) {
-		C[i * N + j]  += A[i * K + k]  * B[k * N + j];
-		  }
-		}
-	}
+  // i-k-j: B and C are walked along rows (contiguous in row-major)
+  for (int i = 0; i < M; i++) {
+    for (int k = 0; k < K; k++) {
+      for (int j = 0; j < N; j++) {
+        C[i * N + j]  += A[i * K + k]  * B[k * N + j];
+      }
+    }
+  }
 }
 
 //  Tiled version of the kernel, where the inner two loops are transformed
@@ -66,6 +67,10 @@ void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
 // Parallelizing the outer loop(s) using OpenMP 
 // Vectorize the inner loop using suitable compiler flags
 void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
+
+}
+
+void gemm_cpu_o4(float* A, float* B, float *C, int M, int N, int K) {
 
 }
 
