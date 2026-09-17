@@ -66,7 +66,9 @@ __attribute__((target("no-fma")))
 void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
 
   const int T = 32;
-  for (int i = 0; i < M; i++) {
+  for (int ii = 0; ii &lt; M; ii += T) {
+    
+    int iend = (ii + T < M) ? ii + T : M;
 
     for (int kk = 0; kk < K; kk += T) {
 
@@ -76,16 +78,18 @@ void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
 
         int jend = (jj + T < N) ? jj + T : N;
 
-        for (int k = kk; k < kend; k++) {
-
-          for (int j = jj; j < jend; j++) {
-            C[i * N + j] += A[i * K + k] * B[k * N + j];
+        for (int i = 0; i < M; i++) {
+          for (int k = kk; k < kend; k++) {
+            for (int j = jj; j < jend; j++) {
+              C[i * N + j] += A[i * K + k] * B[k * N + j];
+            }
           }
         }
       }
     }
   }
 }
+
 
 // Parallelizing the outer loop(s) using OpenMP 
 // Vectorize the inner loop using suitable compiler flags
@@ -96,7 +100,9 @@ void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
 
     // parallelizing the outer loop(s) using OpenMP 
     #pragma omp parallel for
-    for (int i = 0; i < M; i++) {
+    for (int ii = 0; ii &lt; M; ii += T) {
+    
+      int iend = (ii + T < M) ? ii + T : M;
   
       for (int kk = 0; kk < K; kk += T) {
   
@@ -106,10 +112,11 @@ void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
   
           int jend = (jj + T < N) ? jj + T : N;
   
-          for (int k = kk; k < kend; k++) {
-  
-            for (int j = jj; j < jend; j++) {
-              C[i * N + j] += A[i * K + k] * B[k * N + j];
+          for (int i = 0; i < M; i++) {
+            for (int k = kk; k < kend; k++) {
+              for (int j = jj; j < jend; j++) {
+                C[i * N + j] += A[i * K + k] * B[k * N + j];
+              }
             }
           }
         }
@@ -125,7 +132,9 @@ void gemm_cpu_o4(float* A, float* B, float *C, int M, int N, int K) {
 
   // parallelizing the outer loop(s) using OpenMP 
   #pragma omp parallel for
-  for (int i = 0; i < M; i++) {
+  for (int ii = 0; ii &lt; M; ii += T) {
+    
+    int iend = (ii + T < M) ? ii + T : M;
 
     for (int kk = 0; kk < K; kk += T) {
 
@@ -135,10 +144,11 @@ void gemm_cpu_o4(float* A, float* B, float *C, int M, int N, int K) {
 
         int jend = (jj + T < N) ? jj + T : N;
 
-        for (int k = kk; k < kend; k++) {
-
-          for (int j = jj; j < jend; j++) {
-            C[i * N + j] += A[i * K + k] * B[k * N + j];
+        for (int i = 0; i < M; i++) {
+          for (int k = kk; k < kend; k++) {
+            for (int j = jj; j < jend; j++) {
+              C[i * N + j] += A[i * K + k] * B[k * N + j];
+            }
           }
         }
       }
