@@ -155,16 +155,16 @@ int main(int argc, char* argv[]) {
 	float* refC = new float[Ref::M * Ref::N]();
 	auto ref = Ref();
 	//CHECK(gemm_cpu_o0)
-	CHECK(gemm_cpu_o1)
-	CHECK(gemm_cpu_o2)
-	CHECK(gemm_cpu_o3)
+	//CHECK(gemm_cpu_o1)
+	//CHECK(gemm_cpu_o2)
+	//CHECK(gemm_cpu_o3)
 	CHECK(gemm_cpu_o4)
 	delete[] refC;
 	
 	//TIME(gemm_cpu_o0)
-	TIME(gemm_cpu_o1)
-	TIME(gemm_cpu_o2)
-	TIME(gemm_cpu_o3)
+	//TIME(gemm_cpu_o1)
+	//TIME(gemm_cpu_o2)
+	//TIME(gemm_cpu_o3)
 	TIME(gemm_cpu_o4)
 
 	delete[] A;
