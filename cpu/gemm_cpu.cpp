@@ -32,6 +32,7 @@ std::chrono::duration<double, std::milli> duration_ ## name = time_ ## name/floa
 // reference CPU implementation of the GEMM kernel
 // note that this implementation is naive and will run for longer for larger
 // graphs
+__attribute__((target("no-fma")))
 void gemm_cpu_o0(float* A, float* B, float *C, int M, int N, int K) {
   for (int j = 0; j < N; j++) {
     for (int i = 0; i < M; i++) {
@@ -47,6 +48,7 @@ void gemm_cpu_o0(float* A, float* B, float *C, int M, int N, int K) {
 
 // Optimal loop order for this kernel based on data locality
 // when loops are iterating through values of input and output matrices
+__attribute__((target("no-fma")))
 void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
   // i-k-j: B and C are walked along rows (contiguous in row-major)
   for (int i = 0; i < M; i++) {
@@ -60,6 +62,7 @@ void gemm_cpu_o1(float* A, float* B, float *C, int M, int N, int K) {
 
 // Tiled version of the kernel, where the inner two loops are transformed
 // Tiling factor fits accessed data into the L1 cache of the computer
+__attribute__((target("no-fma")))
 void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
 
   const int T = 32;
@@ -86,6 +89,7 @@ void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
 
 // Parallelizing the outer loop(s) using OpenMP 
 // Vectorize the inner loop using suitable compiler flags
+__attribute__((target("no-fma")))
 void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
 
     const int T = 32;
@@ -113,6 +117,8 @@ void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
     }
   }
 
+// o4 = o3 + per-function -O3 / FMA (does not change compile flags for o0–o3)
+__attribute__((optimize("O3"), target("fma")))
 void gemm_cpu_o4(float* A, float* B, float *C, int M, int N, int K) {
 
   const int T = 32;
@@ -169,12 +175,14 @@ int main(int argc, char* argv[]) {
 	CHECK(gemm_cpu_o1)
 	CHECK(gemm_cpu_o2)
 	CHECK(gemm_cpu_o3)
+  CHECK(gemm_cpu_o4)
 	delete[] refC;
 	
 	//TIME(gemm_cpu_o0)
 	TIME(gemm_cpu_o1)
 	TIME(gemm_cpu_o2)
 	TIME(gemm_cpu_o3)
+	TIME(gemm_cpu_o4)
 
 	delete[] A;
 	delete[] B;

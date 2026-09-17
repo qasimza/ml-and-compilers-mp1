@@ -11,5 +11,3 @@ else ()
 endif ()
 
 add_executable(mp1_cpu gemm_cpu.cpp)
-
-target_compile_options(mp1_cpu PRIVATE -O3)
