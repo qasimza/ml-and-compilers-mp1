@@ -93,7 +93,7 @@ void gemm_cpu_o2(float* A, float* B, float *C, int M, int N, int K) {
 
 // Parallelizing the outer loop(s) using OpenMP 
 // Vectorize the inner loop using suitable compiler flags
-__attribute__((target("no-fma")))
+__attribute__((optimize("O3"), target("no-fma")))
 void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
 
     const int T = 32;
@@ -124,7 +124,7 @@ void gemm_cpu_o3(float* A, float* B, float *C, int M, int N, int K) {
     }
   }
 
-// o4 = o3 + per-function -O3 / FMA (does not change compile flags for o0–o3)
+// o4 = o3 + FMA (o3 already has -O3; o0–o2 do not)
 __attribute__((optimize("O3"), target("fma")))
 void gemm_cpu_o4(float* A, float* B, float *C, int M, int N, int K) {
 
