@@ -184,7 +184,7 @@ void gemm_gpu_o2(float* A, float* B, float* C, int M, int N, int K)
 
 // Empirically try out multiple kernel launch parameters and find out a performant set of parameters that utilizes
 // the GPU parallelism better. Note that you are not required to find the best.
-// o2 is left untouched (fixed 16x16). Launch-parameter experiments (8 / 16 / 32 / 64) are o3 only.
+// o2 is left untouched (fixed 16x16). Launch-parameter experiments (8 / 16 / 32) are o3 only.
 template<int TILE>
 __global__ void gemm_gpu_o3_kernel(float* A, float* B, float *C, int M, int N, int K) {
 	__shared__ float As[TILE][TILE];
@@ -246,10 +246,6 @@ void gemm_gpu_o3_32(float* A, float* B, float* C, int M, int N, int K) {
 	gemm_gpu_o3_launch<32>(A, B, C, M, N, K);
 }
 
-void gemm_gpu_o3_64(float* A, float* B, float* C, int M, int N, int K) {
-	gemm_gpu_o3_launch<64>(A, B, C, M, N, K);
-}
-
 // Default o3 = 32x32 after trying 8 / 16 / 32. Change this if another size wins.
 void gemm_gpu_o3(float* A, float* B, float* C, int M, int N, int K)
 {
@@ -286,7 +282,6 @@ int main(int argc, char* argv[]) {
 	CHECK(gemm_gpu_o3_8)
 	CHECK(gemm_gpu_o3_16)
 	CHECK(gemm_gpu_o3_32)
-	CHECK(gemm_gpu_o3_64)
 
 	// Actual run
  	//TIME(gemm_gpu_o0)
@@ -295,7 +290,6 @@ int main(int argc, char* argv[]) {
 	TIME(gemm_gpu_o3_8)
 	TIME(gemm_gpu_o3_16)
 	TIME(gemm_gpu_o3_32)
-	TIME(gemm_gpu_o3_64)
 
 	cudaFreeHost(A);
 	cudaFreeHost(B);
