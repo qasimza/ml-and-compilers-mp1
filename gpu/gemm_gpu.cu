@@ -102,16 +102,31 @@ void gemm_gpu_o0(float* A, float* B, float* C, int M, int N, int K)
 	gemm_gpu_o0_kernel<<<gridSize, blockSize>>>(A, B, C, M, N, K);
 }
 
-// Parallelize the kernel across multiple Streaming Multiprocessors (SM) and thread blocks. 
-// Find a set of suitable kernel launch parameters. Note that the starter code does all computations in one SM.
+// Parallelize the kernel across multiple Streaming Multiprocessors (SM) and thread blocks.
+// Find a set of suitable kernel launch parameters. 
+// Note that the starter code does all computations in one SM.
 
-// The scafolding for optimized GEMM implementations
 __global__ void gemm_gpu_o1_kernel(float* A, float* B, float *C, int M, int N, int K) {
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+
+	if (row >= M || col >= N) {
+		return;
+	} else {
+		float sum = 0.0f;
+		for (int k = 0; k < K; k++) {
+			sum += A[row * K + k] * B[k * N + col];
+		}
+		C[row * N + col] += sum;
+	}
 }
 
 void gemm_gpu_o1(float* A, float* B, float* C, int M, int N, int K)
 {
-	// Init block and grid size
+	dim3 blockSize(16, 16);
+	dim3 gridSize((N + blockSize.x - 1) / blockSize.x,
+	              (M + blockSize.y - 1) / blockSize.y);
+	gemm_gpu_o1_kernel<<<gridSize, blockSize>>>(A, B, C, M, N, K);
 }
 
 
