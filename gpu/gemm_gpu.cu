@@ -133,11 +133,53 @@ void gemm_gpu_o1(float* A, float* B, float* C, int M, int N, int K)
 // Tile your implementation to maximize data reuse. Please use GPU shared memory to load and store the tiles
 // used for computation. Also, think about memory coalescing when you develop the tiled code.
 
+#define O2_TILE_SIZE 16
+
 __global__ void gemm_gpu_o2_kernel(float* A, float* B, float *C, int M, int N, int K) {
+	__shared__ float As[O2_TILE_SIZE][O2_TILE_SIZE];
+	__shared__ float Bs[O2_TILE_SIZE][O2_TILE_SIZE];
+
+	int col = blockIdx.x * O2_TILE_SIZE + threadIdx.x;
+	int row = blockIdx.y * O2_TILE_SIZE + threadIdx.y;
+	float sum = 0.0f;
+	int num_tiles = (K + O2_TILE_SIZE - 1) / O2_TILE_SIZE;
+
+	for (int t = 0; t < num_tiles; t++) {
+		int a_col = t * O2_TILE_SIZE + threadIdx.x;
+		int b_row = t * O2_TILE_SIZE + threadIdx.y;
+
+		if (row < M && a_col < K) {
+			As[threadIdx.y][threadIdx.x] = A[row * K + a_col];
+		} else {
+			As[threadIdx.y][threadIdx.x] = 0.0f;
+		}
+
+		if (b_row < K && col < N) {
+			Bs[threadIdx.y][threadIdx.x] = B[b_row * N + col];
+		} else {
+			Bs[threadIdx.y][threadIdx.x] = 0.0f;
+		}
+
+		__syncthreads();
+
+		for (int k = 0; k < O2_TILE_SIZE; k++) {
+			sum += As[threadIdx.y][k] * Bs[k][threadIdx.x];
+		}
+
+		__syncthreads();
+	}
+
+	if (row < M && col < N) {
+		C[row * N + col] += sum;
+	}
 }
+
 void gemm_gpu_o2(float* A, float* B, float* C, int M, int N, int K)
 {
-	// Init block and grid size
+	dim3 blockSize(O2_TILE_SIZE, O2_TILE_SIZE);
+	dim3 gridSize((N + O2_TILE_SIZE - 1) / O2_TILE_SIZE,
+	              (M + O2_TILE_SIZE - 1) / O2_TILE_SIZE);
+	gemm_gpu_o2_kernel<<<gridSize, blockSize>>>(A, B, C, M, N, K);
 }
 
 // Empirically try out multiple kernel launch parameters and find out a performant set of parameters that utilizes
