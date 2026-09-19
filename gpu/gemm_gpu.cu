@@ -184,11 +184,76 @@ void gemm_gpu_o2(float* A, float* B, float* C, int M, int N, int K)
 
 // Empirically try out multiple kernel launch parameters and find out a performant set of parameters that utilizes
 // the GPU parallelism better. Note that you are not required to find the best.
+// o2 is left untouched (fixed 16x16). Launch-parameter experiments (8 / 16 / 32 / 64) are o3 only.
+template<int TILE>
 __global__ void gemm_gpu_o3_kernel(float* A, float* B, float *C, int M, int N, int K) {
+	__shared__ float As[TILE][TILE];
+	__shared__ float Bs[TILE][TILE];
+
+	int col = blockIdx.x * TILE + threadIdx.x;
+	int row = blockIdx.y * TILE + threadIdx.y;
+	float sum = 0.0f;
+	int num_tiles = (K + TILE - 1) / TILE;
+
+	for (int t = 0; t < num_tiles; t++) {
+		int a_col = t * TILE + threadIdx.x;
+		int b_row = t * TILE + threadIdx.y;
+
+		if (row < M && a_col < K) {
+			As[threadIdx.y][threadIdx.x] = A[row * K + a_col];
+		} else {
+			As[threadIdx.y][threadIdx.x] = 0.0f;
+		}
+
+		if (b_row < K && col < N) {
+			Bs[threadIdx.y][threadIdx.x] = B[b_row * N + col];
+		} else {
+			Bs[threadIdx.y][threadIdx.x] = 0.0f;
+		}
+
+		__syncthreads();
+
+		for (int k = 0; k < TILE; k++) {
+			sum += As[threadIdx.y][k] * Bs[k][threadIdx.x];
+		}
+
+		__syncthreads();
+	}
+
+	if (row < M && col < N) {
+		C[row * N + col] += sum;
+	}
 }
+
+template<int TILE>
+void gemm_gpu_o3_launch(float* A, float* B, float* C, int M, int N, int K)
+{
+	dim3 blockSize(TILE, TILE);
+	dim3 gridSize((N + TILE - 1) / TILE,
+	              (M + TILE - 1) / TILE);
+	gemm_gpu_o3_kernel<TILE><<<gridSize, blockSize>>>(A, B, C, M, N, K);
+}
+
+void gemm_gpu_o3_8(float* A, float* B, float* C, int M, int N, int K) {
+	gemm_gpu_o3_launch<8>(A, B, C, M, N, K);
+}
+
+void gemm_gpu_o3_16(float* A, float* B, float* C, int M, int N, int K) {
+	gemm_gpu_o3_launch<16>(A, B, C, M, N, K);
+}
+
+void gemm_gpu_o3_32(float* A, float* B, float* C, int M, int N, int K) {
+	gemm_gpu_o3_launch<32>(A, B, C, M, N, K);
+}
+
+void gemm_gpu_o3_64(float* A, float* B, float* C, int M, int N, int K) {
+	gemm_gpu_o3_launch<64>(A, B, C, M, N, K);
+}
+
+// Default o3 = 32x32 after trying 8 / 16 / 32. Change this if another size wins.
 void gemm_gpu_o3(float* A, float* B, float* C, int M, int N, int K)
 {
-	// Init block and grid size
+	gemm_gpu_o3_launch<32>(A, B, C, M, N, K);
 }
 
 
@@ -218,13 +283,19 @@ int main(int argc, char* argv[]) {
  	//CHECK(gemm_gpu_o0)
 	CHECK(gemm_gpu_o1)
 	CHECK(gemm_gpu_o2)
-	CHECK(gemm_gpu_o3)
+	CHECK(gemm_gpu_o3_8)
+	CHECK(gemm_gpu_o3_16)
+	CHECK(gemm_gpu_o3_32)
+	CHECK(gemm_gpu_o3_64)
 
 	// Actual run
  	//TIME(gemm_gpu_o0)
 	TIME(gemm_gpu_o1)
 	TIME(gemm_gpu_o2)
-	TIME(gemm_gpu_o3)
+	TIME(gemm_gpu_o3_8)
+	TIME(gemm_gpu_o3_16)
+	TIME(gemm_gpu_o3_32)
+	TIME(gemm_gpu_o3_64)
 
 	cudaFreeHost(A);
 	cudaFreeHost(B);
